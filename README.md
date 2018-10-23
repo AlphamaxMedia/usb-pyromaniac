@@ -1,5 +1,13 @@
 # usb-pyromaniac
-``
+
+### Pycharm integration
+This script requires root access to modify partition tables, etc. 
+
+To give the script root in Pycharm, I followed this guide:
+https://esmithy.net/2015/05/05/rundebug-as-root-in-pycharm/
+
+The python-sudo.sh script is also checked in for reference.
+
 ### Dev notes
 Arguments: 
 * directory where source images are located.
