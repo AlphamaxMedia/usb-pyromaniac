@@ -17,6 +17,10 @@ empty space, e.g. you may have a 16GB drive but you only need to load
 here will dd an image of just the size it needs to be and then resizes
 it to use the whole disk.
 
+One other minor advantage of using the rsync technique is that
+if you need to update the master image, you can mount the existing
+image and just re-run the rsync command and save a lot of time.
+
 ### Mapping USB ports
 The USB port mapping is necessary because if an image burn fails
 you want to know which one is bad. A dev node (/dev/sdb) doesn't
@@ -61,6 +65,9 @@ root disk, and rsync the data over:
   sudo rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} /mnt/part2/ /mnt/loop/
   sudo umount /mnt/loop
 ```
+Note that you can run the series of commands above to
+also quickly update the image as well if you have made changes
+to it.
 
 To improve image copying speed, you'll want to fsck it
 and also adjust the UUID if you want it to match exactly
