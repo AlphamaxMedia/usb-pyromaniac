@@ -289,7 +289,6 @@ def progmain(mainscr):
                         name_to_status[keys] = 'Starting burn...'
                         mount = phys_to_mount[name_to_phys[keys]]
                         name_to_thread[keys] = BurnThread(name="BurnThread{}".format(mount), mountpoint=mount, namedport=keys)
-                        time.sleep(1)  # stagger starts to avoid overloading
 
                 for keys in name_to_thread:
                     name_to_thread[keys].start()
