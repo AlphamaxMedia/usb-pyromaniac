@@ -20,8 +20,8 @@ Source image directory should contain the following files:
 
 Partition.txt format as follows:
 ```text
-part1  8192  93802    85611      0xc
-part2  98304 31116287 31017984   0x83
+part1  8192  93802    85611      fat32
+part2  98304 31116287 31017984   ext4
 partid 0xd81061a1
 uuid "efb77116-2573-474b-931a-33b2e14cf331"
 ``` 
