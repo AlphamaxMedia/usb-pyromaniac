@@ -15,10 +15,11 @@ from collections import namedtuple
 import struct
 import subprocess
 
-
+## Disk abstractions
 Disk = namedtuple("Disk", "part1 part2 partid uuid")
 Partition = namedtuple("Partition", "start end sectors id")
 
+## UI absrtactions
 begin_x = 5
 begin_y = 3
 height = 20
@@ -28,18 +29,17 @@ width = 80
 nc_action = [2, 1]
 nc_sysname = [2, 2]
 nc_devpath = [2, 3]
-
 nc_portarray = [2, 5]
-
 nc_input = [2, height - 1]
 nc_prompt = [0, height - 2]
-prompt = "Insert drives, then press B to start mass burn, or q to quit..."
+prompt = "Insert drives, then press shift-B to start mass burn, or shift-Q to quit..."
 replprompt = "PYRO> "
 inputstr = ""
 
 win = None
 winLock = threading.RLock()
 
+## State abstractions
 name_to_phys = {}     # mapping of physical port name to device node, e.g. {'USB0':'2-4:1.0'}
 phys_to_mount = {}    # mapping of device node to mount point, e.g. {'2-4:1.0':'/dev/sdc1'}
 name_to_status = {}    # mapping of physical port name to status messages, e.g. {'USB0':'Insert Drive...'}
@@ -52,6 +52,7 @@ action_status = ''
 device_status = ''
 sysname_status = ''
 
+# udev callback
 def log_event(action, device):
     global portname
     global name_to_phys
@@ -64,12 +65,12 @@ def log_event(action, device):
     else:
         sysname_status = device.sys_name # "phys" mapping
 
+    phys_to_name = {v: k for k, v in name_to_phys.items()}  # this inverts the dictionary
     if state == 'WAIT_INSERT':
         if device.device_type == 'usb_interface' and action == 'add':
             if device.sys_name in phys_to_mount:
                 phys_to_mount[device.sys_name] = 'pending'
 
-        phys_to_name = {v: k for k, v in name_to_phys.items()}  # this inverts the dictionary
         if device.device_type == 'partition' and action == 'add':
             numfound = 0
             for keys in phys_to_mount:
@@ -79,11 +80,13 @@ def log_event(action, device):
                     name_to_status[phys_to_name[keys]] = 'Media found at ' + phys_to_mount[keys]
             assert numfound == 1 or numfound == 0, 'Number of udev partition mappings unexpected (should be 1): %r' % numfound
 
-        # always update remove status regardless of state
-        if device.device_type == 'usb_interface' and action == 'remove' and device.driver == None:
-            if device.sys_name in phys_to_mount:
-                phys_to_mount[device.sys_name] = 'none'
-                name_to_status[phys_to_name[device.sys_name]] = 'Insert drive...'
+    # always update remove status regardless of state
+    if device.device_type == 'usb_interface' and action == 'remove' and device.driver == None:
+        if device.sys_name in phys_to_mount:
+            phys_to_mount[device.sys_name] = 'none'
+            name_to_status[phys_to_name[device.sys_name]] = 'Insert drive...'
+
+
 
 class BurnThread(threading.Thread):
     def __init__(self, name, mountpoint, namedport):
@@ -178,31 +181,21 @@ class BurnThread(threading.Thread):
             name_to_status[self.namedport] = self.mountpoint + " ERROR: " + lines.decode("utf-8")
             return
 
-        ##### SET BLKID PARTITION 2
-        name_to_status[self.namedport] = self.mountpoint + ": set blkid partition 2..."
-        p = subprocess.Popen(["tune2fs", self.mountpoint + "2", "-U", disk.uuid], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        for lines in p.stderr:
-            name_to_status[self.namedport] = self.mountpoint + ": " + lines.decode("utf-8")
+        ##### SET BLKID PARTITION 2 -- actually, this can be done in the source image!
+        #name_to_status[self.namedport] = self.mountpoint + ": set blkid partition 2..."
+        #p = subprocess.Popen(["tune2fs", self.mountpoint + "2", "-U", disk.uuid], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        #for lines in p.stderr:
+        #    name_to_status[self.namedport] = self.mountpoint + ": " + lines.decode("utf-8")
 
-        p.wait()
-        if p.returncode != 0:
-            name_to_status[self.namedport] = self.mountpoint + " ERROR: " + lines.decode("utf-8")
-            return
+        #p.wait()
+        #if p.returncode != 0:
+        #    name_to_status[self.namedport] = self.mountpoint + " ERROR: " + lines.decode("utf-8")
+        #    return
 
         ##### SET PASS STATE
         name_to_status[self.namedport] = self.mountpoint + " FINISHED"
         return
 
-
-class readable_dir(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        prospective_dir=values
-        if not os.path.isdir(prospective_dir):
-            raise argparse.ArgumentTypeError("readable_dir:{0} is not a valid path".format(prospective_dir))
-        if os.access(prospective_dir, os.R_OK):
-            setattr(namespace,self.dest,prospective_dir)
-        else:
-            raise argparse.ArgumentTypeError("readable_dir:{0} is not a readable dir".format(prospective_dir))
 
 def progmain(mainscr):
     global win
@@ -240,7 +233,7 @@ def progmain(mainscr):
     observer = pyudev.MonitorObserver(monitor, log_event)
     observer.start()
 
-    while(True):
+    while True:
         with winLock:
             win.move(nc_action[1], nc_action[0])
             win.clrtoeol()
@@ -276,7 +269,7 @@ def progmain(mainscr):
 
         time.sleep(0.05)
 
-        if c == ord('q') or c == ord('Q'):
+        if c == ord('Q') or c == ord('"'):
             observer.stop()
             return
         elif c in(curses.KEY_BACKSPACE, curses.KEY_DL, 127, curses.erasechar()):
@@ -284,7 +277,7 @@ def progmain(mainscr):
             inputstr = inputstr[:-1]
         elif c == ord('\n'):
             inputstr = ''
-        elif c == ord('B'):
+        elif c == ord('B') or c == ord('X'):
             if state == 'WAIT_INSERT':
                 state = 'BURNING'
                 prompt = 'Burning, please wait...'
@@ -296,6 +289,7 @@ def progmain(mainscr):
                         name_to_status[keys] = 'Starting burn...'
                         mount = phys_to_mount[name_to_phys[keys]]
                         name_to_thread[keys] = BurnThread(name="BurnThread{}".format(mount), mountpoint=mount, namedport=keys)
+                        time.sleep(1)  # stagger starts to avoid overloading
 
                 for keys in name_to_thread:
                     name_to_thread[keys].start()
@@ -328,31 +322,43 @@ def progmain(mainscr):
                 prompt = "Burn finished, remove disks..."
                 state = 'REMOVE'
         elif state == 'REMOVE':
-            if elapsed_time > 15:
+            if elapsed_time > 10:
                 start_time = time.time()
-                os.system("aplay alert.wav")
+                p = subprocess.Popen(["aplay", "alert.wav"], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                p.wait()
 
             elapsed_time = time.time() - start_time
 
             all_removed = True
             for keys in name_to_status:
-                if not( keys == 'Insert drive...' or keys == '[]' ):
+                if not(name_to_status[keys] == 'Insert drive...' or name_to_status[keys] == '[]'):
                     all_removed = False
 
             if all_removed:
                 for keys in name_to_status:
                     name_to_status[keys] = 'Insert drive...'
-                    prompt = "Insert drives, then press B to start mass burn, or q to quit..."
+                    prompt = "Insert drives, then press B to start mass burn, or Q to quit..."
                     state = 'WAIT_INSERT'
 
 
+class ReadableDir(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        prospective_dir=values
+        if not os.path.isdir(prospective_dir):
+            raise argparse.ArgumentTypeError("ReadableDir:{0} is not a valid path".format(prospective_dir))
+        if os.access(prospective_dir, os.R_OK):
+            setattr(namespace,self.dest,prospective_dir)
+        else:
+            raise argparse.ArgumentTypeError("ReadableDir:{0} is not a readable dir".format(prospective_dir))
+
 
 def main():
-    wrapper(progmain)
+    wrapper(progmain)  # this is the curses wrapper to clean up terminal state when exiting
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='usb-pyromaniac')
-    parser.add_argument('-i', '--image_directory', action=readable_dir, help='Directory of image files', required=True)
+    parser.add_argument('-i', '--image_directory', action=ReadableDir, help='Directory of image files', required=True)
     parser.add_argument('-u', '--usb_map', type=str, help='USB mapping file', default='usb_map.pkl')
     args = parser.parse_args()
 

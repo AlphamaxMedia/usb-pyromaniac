@@ -23,7 +23,7 @@ Partition.txt format as follows:
 part1  8192  93802    85611      fat32
 part2  98304 31116287 31017984   ext4
 partid 0xd81061a1
-uuid "efb77116-2573-474b-931a-33b2e14cf331"
+uuid   efb77116-2573-474b-931a-33b2e14cf331
 ``` 
 Whitespace can be variable/tabs. Numbers are decimal unless with 0x in front then hex
 First item is the description identifier. This allows the descriptions to go out
