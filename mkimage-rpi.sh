@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# example: sudo ./clone-rpi.sh /dev/sdb 4500
+# example: sudo ./mkimage-rpi.sh /dev/sdb 4500
 # first arg is device node
 # second arg is size of image in MB
 # this command relies on "munge-partition.py" to be in the same directory
