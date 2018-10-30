@@ -21,6 +21,20 @@ rm -f $MANIFEST
 
 for filename in *; do
     [ -e "$filename" ] || continue
-    printf "Computing md5sum of %s\n" $filename
-    time md5sum $filename >> $MANIFEST
+    if [[ "$filename" != *.gz ]]; then
+	printf "Computing md5sum of %s\n" $filename
+	time md5sum $filename >> $MANIFEST
+    fi
 done
+
+printf "Final operation: gzipping part2.ext4\n"
+gzip -c part2.ext4 > part2.ext4.gz
+
+# after this command is run, build the gzip file for upload
+# gzip -c part2.ext4 > part2.ext4.gz
+
+# note that it's ok to have both part2.ext4 and part2.ext4.gz on the web server
+# the client only downloads the .gz version and unzips it before checking the
+# manifest
+
+# BUT the manifest fire should *not* have the .gz version in it!
