@@ -36,6 +36,28 @@ directory.
 
 ### Preparing the disk image directory
 
+There's a script called mkimage-rpi.sh which walks through the steps
+listed below automatically, including building the partition.txt
+descriptor file. It makes some assumptions about mount
+point availability, but is otherwise fairly generic. It takes
+as arguments the device node of the drive to image, the size of
+the rootfs image to create in MiB, and a type prefix which is
+a free-form string to help specify the directory into which an
+image should go. In general, the rootfs image size should be
+about +1,000 MiB over the used disk space reported by the df tool.
+On a typical image this will result in only a couple hundred
+MB of actual free space in the imaged partition, due to losses
+in filesystem overhead.
+
+There's also a script called sanitize-rootfs.sh which takes
+some steps to remove keys and history from the rootfs image. It
+doesn't clear things like chrome caches or desktop preferences.
+The sanitize-rootfs script is separate from the imaging because
+there are instances where this shouldn't be run (for example,
+imaging an RPi image destined to run factory test infrastruture).
+
+Here's the steps to create an image manually:
+
 Image each partition individually. This script is customized for
 the Rpi scenario, where you have a small FAT32 boot partition
 and a large EXT4 root partition. 
@@ -243,3 +265,4 @@ PYRO> Remove media...
 ```
 
 Once all drives removed, state goes back to State 1
+
