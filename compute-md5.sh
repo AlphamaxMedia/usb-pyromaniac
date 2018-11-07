@@ -37,4 +37,4 @@ gzip -c part2.ext4 > part2.ext4.gz
 # the client only downloads the .gz version and unzips it before checking the
 # manifest
 
-# BUT the manifest fire should *not* have the .gz version in it!
+# BUT the manifest file should *not* have the .gz version in it!
