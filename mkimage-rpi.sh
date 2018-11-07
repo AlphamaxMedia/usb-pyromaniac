@@ -31,8 +31,10 @@ printf "Record geometries and identifiers\n"
     echo q
 ) | fdisk $1 | ./munge-partition.py $TARGETDIR/partition.txt
 
+printf "Extracting UUID\n"
 blkid "$1"2  # for some reason this dummy command is necessary to get the next line to work
 UUID=$(blkid "$1"2 | grep -P '\bUUID=(\S+)' -o | cut -f2 -d\")
+printf "uuid: %s\n" $UUID
 printf "uuid   %s\n" $UUID >> $TARGETDIR/partition.txt
 
 # exit 0  # exit here when testing partition.txt scripts
